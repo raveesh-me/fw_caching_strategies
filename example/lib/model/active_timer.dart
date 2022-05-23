@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 enum ActiveTimerState { playing, paused, stopped }
 
 class ActiveTimer {
@@ -9,8 +11,41 @@ class ActiveTimer {
   ActiveTimer({
     required this.startTime,
     required this.duration,
-    required this.playPauseEvents,
-  }) : activeTimerState = ActiveTimerState.playing;
+  })  : activeTimerState = ActiveTimerState.playing,
+        playPauseEvents = <PlayPauseEvent>[];
+
+  Duration get remainingDuration =>
+      playPauseEvents.isEmpty ? duration : playPauseEvents.last.newDuration;
+
+  playPauseToggle(DateTime now) {
+    PlayPauseEventType toggleType;
+    PlayPauseEvent event;
+    switch (activeTimerState) {
+      case ActiveTimerState.playing:
+        toggleType = PlayPauseEventType.pause;
+        event = PlayPauseEvent(
+          type: toggleType,
+          playPauseEventTime: now,
+          newDuration: remainingDuration,
+        );
+        break;
+      case ActiveTimerState.paused:
+        toggleType = PlayPauseEventType.play;
+        event = PlayPauseEvent(
+          type: PlayPauseEventType.play,
+          playPauseEventTime: now,
+          newDuration: remainingDuration +
+              now.difference(playPauseEvents.last.playPauseEventTime),
+        );
+        break;
+      case ActiveTimerState.stopped:
+        String exceptionMessage =
+            "Error: Play/Pause called when the card is stopped";
+        log(exceptionMessage);
+        throw Exception(exceptionMessage);
+    }
+        playPauseEvents.add(event);
+  }
 }
 
 enum PlayPauseEventType { play, pause }
